@@ -1,24 +1,28 @@
-# My Shanghai Semester — prototype
+# Mein Shanghai-Semester — Prototyp
 
-This is a front-end prototype of the private photo portal.
+Dies ist ein Frontend-Prototyp für ein privates Fotoportal.
 
-## Open it
-Open `index.html` in a browser.
+## Öffnen
 
-## What works
-- chronological photo archive by month
-- category filters
-- photo lightbox with caption/date/place
-- private-looking Admin panel
-- local photo upload + caption/date/place/category
-- uploaded items are saved in the browser's localStorage
+Öffne `index.html` in einem Browser.
 
-## Important
-This prototype is NOT yet a real private website. The "Admin" area is not protected by a real login and uploads are only stored in the current browser.
+## Was funktioniert
 
-For the final version, the next step should be a small web app with:
-- real admin authentication
-- cloud image storage
-- database for captions/date/place/category
-- reader-only public link for friends
-- optional private/unlisted access
+- Chronologisches Fotoarchiv nach Monaten
+- Kategorien-Filter
+- Foto-Lightbox mit Beschreibung, Datum und Ort
+- Privat wirkender Admin-Bereich
+- Lokaler Foto-Upload inklusive Beschreibung, Datum, Ort und Kategorie
+- Hochgeladene Inhalte werden im `localStorage` des Browsers gespeichert
+
+## Wichtig
+
+Dieser Prototyp ist noch keine echte private Website. Der Bereich „Admin“ ist nicht durch einen echten Login geschützt und Uploads werden ausschließlich im aktuellen Browser gespeichert.
+
+Für die finale Version sollte der nächste Schritt eine kleine Web-App mit folgenden Funktionen sein:
+
+- Echte Admin-Authentifizierung
+- Cloud-Speicher für Bilder
+- Datenbank für Beschreibungen, Datum, Ort und Kategorie
+- Öffentlicher Link mit Leserechten für Freunde
+- Optionaler privater bzw. nicht gelisteter Zugang
