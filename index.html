@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Shanghai Semester</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="logo" href="#top">SHANGHAI <span>2025—26</span></a>
+    <nav>
+      <a href="#photos">Photos</a>
+      <a href="#about">About</a>
+      <button class="admin-link" id="adminToggle">Admin</button>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">A little archive of my time in China</p>
+        <h1>My Shanghai<br><em>Semester</em></h1>
+        <p class="intro">A collection of places, people, food and little moments I want to remember.</p>
+        <a class="scroll-link" href="#photos">Explore the memories ↓</a>
+      </div>
+      <div class="hero-card">
+        <div class="hero-city">
+          <span>上海</span>
+          <small>SHANGHAI</small>
+        </div>
+      </div>
+    </section>
+
+    <section class="photo-section" id="photos">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">The archive</p>
+          <h2>All the little moments</h2>
+        </div>
+        <p class="section-note">September 2025 — January 2026</p>
+      </div>
+
+      <div class="filters" id="filters"></div>
+      <div id="gallery"></div>
+    </section>
+
+    <section class="about" id="about">
+      <p class="eyebrow">A note from me</p>
+      <div class="about-grid">
+        <h2>Five months,<br><em>a thousand memories.</em></h2>
+        <p>This is my little corner of the internet for the photos, places and people that made my semester in Shanghai special. Some are big moments, some are completely ordinary — but I wanted somewhere to keep them all.</p>
+      </div>
+    </section>
+  </main>
+
+  <aside class="admin-panel" id="adminPanel" aria-hidden="true">
+    <div class="admin-inner">
+      <button class="close-admin" id="closeAdmin">×</button>
+      <p class="eyebrow">Private area</p>
+      <h2>Add a memory</h2>
+      <p class="muted">This prototype stores uploads in this browser only. A real shared version can use a secure login and cloud storage.</p>
+
+      <form id="uploadForm">
+        <label>Photo <input id="photoInput" type="file" accept="image/*" required></label>
+        <label>Caption <textarea id="captionInput" placeholder="A little note about this moment..." required></textarea></label>
+        <div class="two-fields">
+          <label>Date <input id="dateInput" type="date" required></label>
+          <label>Place <input id="placeInput" type="text" placeholder="e.g. The Bund" required></label>
+        </div>
+        <label>Category
+          <select id="categoryInput">
+            <option>Shanghai</option>
+            <option>Uni</option>
+            <option>Trips</option>
+            <option>Food</option>
+            <option>Friends</option>
+          </select>
+        </label>
+        <button class="primary-btn" type="submit">Add to my archive</button>
+      </form>
+    </div>
+  </aside>
+
+  <div class="lightbox" id="lightbox" aria-hidden="true">
+    <button class="lightbox-close" id="lightboxClose">×</button>
+    <div class="lightbox-content">
+      <img id="lightboxImage" alt="">
+      <div class="lightbox-caption">
+        <span id="lightboxPlace"></span>
+        <span id="lightboxDate"></span>
+        <p id="lightboxText"></p>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <span>MY SHANGHAI SEMESTER</span>
+    <span>上海 · 2025—26</span>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
