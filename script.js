@@ -1,3 +1,8 @@
+const remoteMode = Boolean(window.SHANGHAI_SUPABASE_URL && window.SHANGHAI_SUPABASE_ANON_KEY);
+const supabaseClient = remoteMode
+  ? window.supabase.createClient(window.SHANGHAI_SUPABASE_URL, window.SHANGHAI_SUPABASE_ANON_KEY)
+  : null;
+
 const seedPhotos = [
   {
     id: 1, date: "2025-09-08", place: "Shanghai", category: "Shanghai",
@@ -21,11 +26,31 @@ const seedPhotos = [
   }
 ];
 
-let photos = JSON.parse(localStorage.getItem("shanghaiPhotos") || "null") || seedPhotos;
+let photos = remoteMode
+  ? []
+  : JSON.parse(localStorage.getItem("shanghaiPhotos") || "null") || seedPhotos;
 let activeFilter = "All";
 
 const gallery = document.getElementById("gallery");
 const filters = document.getElementById("filters");
+
+async function loadPhotos() {
+  if (!remoteMode) return;
+  const { data, error } = await supabaseClient
+    .from("photos")
+    .select("id, date, place, category, caption, image_path")
+    .order("date", { ascending: true });
+
+  if (error) {
+    gallery.innerHTML = `<p class="empty">The archive could not be loaded. Please try again later.</p>`;
+    return;
+  }
+
+  photos = data.map(photo => ({
+    ...photo,
+    image: supabaseClient.storage.from("photos").getPublicUrl(photo.image_path).data.publicUrl
+  }));
+}
 
 function formatMonth(date) {
   return new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(new Date(date + "T12:00:00"));
@@ -88,19 +113,115 @@ function escapeHtml(value) {
 }
 
 const adminPanel = document.getElementById("adminPanel");
-document.getElementById("adminToggle").onclick = () => {
+const uploadForm = document.getElementById("uploadForm");
+const loginForm = document.getElementById("loginForm");
+const adminMessage = document.getElementById("adminMessage");
+const signOutButton = document.getElementById("signOutButton");
+
+function updateAdminState(session) {
+  if (!remoteMode) {
+    loginForm.hidden = true;
+    uploadForm.hidden = false;
+    signOutButton.hidden = true;
+    adminMessage.textContent = "This prototype stores uploads in this browser only.";
+    return;
+  }
+
+  const signedIn = Boolean(session);
+  loginForm.hidden = signedIn;
+  uploadForm.hidden = !signedIn;
+  signOutButton.hidden = !signedIn;
+  adminMessage.textContent = signedIn
+    ? `Signed in as ${session.user.email}. Uploads are added to the shared archive.`
+    : "Sign in to add photos to the shared archive.";
+}
+
+document.getElementById("adminToggle").onclick = async () => {
   adminPanel.classList.add("open");
   adminPanel.setAttribute("aria-hidden", "false");
+  if (remoteMode) {
+    const { data } = await supabaseClient.auth.getSession();
+    updateAdminState(data.session);
+  }
 };
 document.getElementById("closeAdmin").onclick = () => {
   adminPanel.classList.remove("open");
   adminPanel.setAttribute("aria-hidden", "true");
 };
 
-document.getElementById("uploadForm").addEventListener("submit", e => {
+loginForm.addEventListener("submit", async e => {
+  e.preventDefault();
+  if (!remoteMode) return;
+  const submit = loginForm.querySelector("button[type=submit]");
+  submit.disabled = true;
+  const { data, error } = await supabaseClient.auth.signInWithPassword({
+    email: document.getElementById("emailInput").value,
+    password: document.getElementById("passwordInput").value
+  });
+  submit.disabled = false;
+  if (error) {
+    adminMessage.textContent = error.message;
+    return;
+  }
+  loginForm.reset();
+  updateAdminState(data.session);
+});
+
+signOutButton.addEventListener("click", async () => {
+  if (!remoteMode) return;
+  await supabaseClient.auth.signOut();
+  updateAdminState(null);
+});
+
+uploadForm.addEventListener("submit", async e => {
   e.preventDefault();
   const file = document.getElementById("photoInput").files[0];
   if (!file) return;
+  if (file.size > 10 * 1024 * 1024) {
+    adminMessage.textContent = "Please choose an image smaller than 10 MB.";
+    return;
+  }
+
+  if (remoteMode) {
+    const { data: sessionData } = await supabaseClient.auth.getSession();
+    if (!sessionData.session) {
+      updateAdminState(null);
+      return;
+    }
+    const submit = uploadForm.querySelector(".primary-btn");
+    submit.disabled = true;
+    adminMessage.textContent = "Uploading photo…";
+    const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
+    const imagePath = `${sessionData.session.user.id}/${crypto.randomUUID()}.${extension}`;
+    const { error: storageError } = await supabaseClient.storage.from("photos").upload(imagePath, file, {
+      cacheControl: "3600", upsert: false, contentType: file.type
+    });
+    if (storageError) {
+      submit.disabled = false;
+      adminMessage.textContent = storageError.message;
+      return;
+    }
+    const { error: databaseError } = await supabaseClient.from("photos").insert({
+      date: document.getElementById("dateInput").value,
+      place: document.getElementById("placeInput").value,
+      category: document.getElementById("categoryInput").value,
+      caption: document.getElementById("captionInput").value,
+      image_path: imagePath
+    });
+    if (databaseError) {
+      await supabaseClient.storage.from("photos").remove([imagePath]);
+      submit.disabled = false;
+      adminMessage.textContent = databaseError.message;
+      return;
+    }
+    e.target.reset();
+    await loadPhotos();
+    activeFilter = "All";
+    render();
+    submit.disabled = false;
+    adminPanel.classList.remove("open");
+    return;
+  }
   const reader = new FileReader();
   reader.onload = () => {
     photos.push({
@@ -138,4 +259,4 @@ document.getElementById("lightboxClose").onclick = closeLightbox;
 lightbox.addEventListener("click", e => { if (e.target === lightbox) closeLightbox(); });
 document.addEventListener("keydown", e => { if (e.key === "Escape") { closeLightbox(); adminPanel.classList.remove("open"); } });
 
-render();
+loadPhotos().then(render);

@@ -59,7 +59,13 @@
       <button class="close-admin" id="closeAdmin">×</button>
       <p class="eyebrow">Private area</p>
       <h2>Add a memory</h2>
-      <p class="muted">This prototype stores uploads in this browser only. A real shared version can use a secure login and cloud storage.</p>
+      <p class="muted" id="adminMessage">This prototype stores uploads in this browser only.</p>
+
+      <form id="loginForm" hidden>
+        <label>Email <input id="emailInput" type="email" autocomplete="email" required></label>
+        <label>Password <input id="passwordInput" type="password" autocomplete="current-password" required></label>
+        <button class="primary-btn" type="submit">Sign in</button>
+      </form>
 
       <form id="uploadForm">
         <label>Photo <input id="photoInput" type="file" accept="image/*" required></label>
@@ -78,6 +84,7 @@
           </select>
         </label>
         <button class="primary-btn" type="submit">Add to my archive</button>
+        <button class="text-btn" id="signOutButton" type="button" hidden>Sign out</button>
       </form>
     </div>
   </aside>
@@ -99,6 +106,8 @@
     <span>上海 · 2025—26</span>
   </footer>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-config.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
