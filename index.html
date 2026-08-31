@@ -86,6 +86,34 @@
         <button class="primary-btn" type="submit">Add to my archive</button>
         <button class="text-btn" id="signOutButton" type="button" hidden>Sign out</button>
       </form>
+
+      <section class="photo-manager" id="photoManager" hidden>
+        <p class="eyebrow">Manage photos</p>
+        <p class="muted">Delete a photo from the archive.</p>
+        <div class="photo-manager-list" id="photoManagerList"></div>
+
+        <form id="editPhotoForm" hidden>
+          <p class="eyebrow">Edit photo</p>
+          <label>Caption <textarea id="editCaptionInput" required></textarea></label>
+          <div class="two-fields">
+            <label>Date <input id="editDateInput" type="date" required></label>
+            <label>Place <input id="editPlaceInput" type="text" required></label>
+          </div>
+          <label>Category
+            <select id="editCategoryInput">
+              <option>Shanghai</option>
+              <option>Uni</option>
+              <option>Trips</option>
+              <option>Food</option>
+              <option>Friends</option>
+            </select>
+          </label>
+          <div class="edit-actions">
+            <button class="primary-btn" type="submit">Save changes</button>
+            <button class="text-btn" id="cancelEditButton" type="button">Cancel</button>
+          </div>
+        </form>
+      </section>
     </div>
   </aside>
 

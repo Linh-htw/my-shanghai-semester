@@ -117,6 +117,62 @@ const uploadForm = document.getElementById("uploadForm");
 const loginForm = document.getElementById("loginForm");
 const adminMessage = document.getElementById("adminMessage");
 const signOutButton = document.getElementById("signOutButton");
+const photoManager = document.getElementById("photoManager");
+const photoManagerList = document.getElementById("photoManagerList");
+const editPhotoForm = document.getElementById("editPhotoForm");
+let editingPhotoId = null;
+
+function renderPhotoManager(canManage) {
+  photoManager.hidden = !canManage;
+  if (!canManage) return;
+
+  if (!photos.length) {
+    photoManagerList.innerHTML = '<p class="muted">No photos to manage yet.</p>';
+    return;
+  }
+
+  photoManagerList.innerHTML = photos
+    .slice()
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .map(photo => `
+      <article class="photo-manager-item">
+        <img src="${photo.image}" alt="${escapeHtml(photo.caption)}">
+        <div>
+          <strong>${escapeHtml(photo.place)}</strong>
+          <span>${formatDate(photo.date)}</span>
+        </div>
+        <div class="photo-manager-actions">
+          <button class="edit-photo-btn" type="button" data-id="${photo.id}">Edit</button>
+          <button class="delete-photo-btn" type="button" data-id="${photo.id}">Delete</button>
+        </div>
+      </article>
+    `).join("");
+
+  photoManagerList.querySelectorAll(".delete-photo-btn").forEach(button => {
+    button.addEventListener("click", () => deletePhoto(button.dataset.id));
+  });
+  photoManagerList.querySelectorAll(".edit-photo-btn").forEach(button => {
+    button.addEventListener("click", () => openEditPhoto(button.dataset.id));
+  });
+}
+
+function openEditPhoto(id) {
+  const photo = photos.find(p => String(p.id) === String(id));
+  if (!photo) return;
+  editingPhotoId = photo.id;
+  document.getElementById("editCaptionInput").value = photo.caption;
+  document.getElementById("editDateInput").value = photo.date;
+  document.getElementById("editPlaceInput").value = photo.place;
+  document.getElementById("editCategoryInput").value = photo.category;
+  editPhotoForm.hidden = false;
+  editPhotoForm.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function closeEditPhoto() {
+  editingPhotoId = null;
+  editPhotoForm.reset();
+  editPhotoForm.hidden = true;
+}
 
 function updateAdminState(session) {
   if (!remoteMode) {
@@ -124,6 +180,7 @@ function updateAdminState(session) {
     uploadForm.hidden = false;
     signOutButton.hidden = true;
     adminMessage.textContent = "This prototype stores uploads in this browser only.";
+    renderPhotoManager(true);
     return;
   }
 
@@ -131,6 +188,7 @@ function updateAdminState(session) {
   loginForm.hidden = signedIn;
   uploadForm.hidden = !signedIn;
   signOutButton.hidden = !signedIn;
+  renderPhotoManager(signedIn);
   adminMessage.textContent = signedIn
     ? `Signed in as ${session.user.email}. Uploads are added to the shared archive.`
     : "Sign in to add photos to the shared archive.";
@@ -172,6 +230,78 @@ signOutButton.addEventListener("click", async () => {
   await supabaseClient.auth.signOut();
   updateAdminState(null);
 });
+
+document.getElementById("cancelEditButton").addEventListener("click", closeEditPhoto);
+
+editPhotoForm.addEventListener("submit", async e => {
+  e.preventDefault();
+  const photo = photos.find(p => String(p.id) === String(editingPhotoId));
+  if (!photo) return;
+
+  const changes = {
+    caption: document.getElementById("editCaptionInput").value,
+    date: document.getElementById("editDateInput").value,
+    place: document.getElementById("editPlaceInput").value,
+    category: document.getElementById("editCategoryInput").value
+  };
+  const submit = editPhotoForm.querySelector("button[type=submit]");
+  submit.disabled = true;
+  adminMessage.textContent = "Saving changes…";
+
+  if (remoteMode) {
+    const { error } = await supabaseClient.from("photos").update(changes).eq("id", photo.id);
+    if (error) {
+      submit.disabled = false;
+      adminMessage.textContent = error.message;
+      return;
+    }
+    await loadPhotos();
+  } else {
+    Object.assign(photo, changes);
+    localStorage.setItem("shanghaiPhotos", JSON.stringify(photos));
+  }
+
+  activeFilter = "All";
+  render();
+  closeEditPhoto();
+  renderPhotoManager(true);
+  submit.disabled = false;
+  adminMessage.textContent = "Changes saved.";
+});
+
+async function deletePhoto(id) {
+  const photo = photos.find(p => String(p.id) === String(id));
+  if (!photo || !confirm(`Delete the photo from ${photo.place}? This cannot be undone.`)) return;
+
+  const button = photoManagerList.querySelector(`.delete-photo-btn[data-id="${id}"]`);
+  button.disabled = true;
+  adminMessage.textContent = "Deleting photo…";
+
+  if (remoteMode) {
+    const { error: databaseError } = await supabaseClient.from("photos").delete().eq("id", photo.id);
+    if (databaseError) {
+      button.disabled = false;
+      adminMessage.textContent = databaseError.message;
+      return;
+    }
+
+    const { error: storageError } = await supabaseClient.storage.from("photos").remove([photo.image_path]);
+    await loadPhotos();
+    render();
+    renderPhotoManager(true);
+    closeEditPhoto();
+    adminMessage.textContent = storageError
+      ? "The photo was removed from the gallery, but its file could not be removed from storage."
+      : "Photo deleted.";
+    return;
+  }
+
+  photos = photos.filter(p => String(p.id) !== String(id));
+  localStorage.setItem("shanghaiPhotos", JSON.stringify(photos));
+  render();
+  renderPhotoManager(true);
+  adminMessage.textContent = "Photo deleted.";
+}
 
 uploadForm.addEventListener("submit", async e => {
   e.preventDefault();
@@ -218,6 +348,7 @@ uploadForm.addEventListener("submit", async e => {
     await loadPhotos();
     activeFilter = "All";
     render();
+    renderPhotoManager(true);
     submit.disabled = false;
     adminPanel.classList.remove("open");
     return;
@@ -236,6 +367,7 @@ uploadForm.addEventListener("submit", async e => {
     e.target.reset();
     activeFilter = "All";
     render();
+    renderPhotoManager(true);
     adminPanel.classList.remove("open");
   };
   reader.readAsDataURL(file);
